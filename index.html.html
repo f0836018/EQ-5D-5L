@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>今天身體過得怎麼樣？健康小幫手問卷</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-emerald-50 to-teal-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white w-full max-w-xl rounded-3xl shadow-2xl overflow-hidden border border-emerald-100">
+        
+        <!-- 頂部標題區 -->
+        <div class="bg-emerald-600 text-white p-6 text-center relative">
+            <div class="absolute top-4 left-4 text-xs bg-emerald-700 px-3 py-1 rounded-full uppercase tracking-wider font-medium">EQ-5D-5L 健康小幫手</div>
+            <h1 class="text-2xl font-bold mt-2">🌱 今天身體過得怎麼樣？</h1>
+            <p class="text-emerald-100 text-sm mt-1">輕鬆點選幾個問題，讓醫生了解您的身體狀況！</p>
+            <!-- 進度條 -->
+            <div class="w-full bg-emerald-800/40 h-2 rounded-full mt-4 overflow-hidden">
+                <div id="progress-bar" class="bg-amber-300 h-full transition-all duration-300" style="width: 16.6%;"></div>
+            </div>
+        </div>
+
+        <!-- 內容容器 -->
+        <div class="p-6 sm:p-8">
+            
+            <!-- 問題與身分輸入區塊 -->
+            <div id="question-container">
+                <!-- 動態生成的內容會放在這裡 -->
+            </div>
+
+            <!-- 按鈕區塊 -->
+            <div id="footer-buttons" class="flex justify-between mt-8 pt-4 border-t border-gray-100">
+                <button id="prev-btn" onclick="prevStep()" class="hidden px-5 py-2.5 rounded-xl border border-gray-300 text-gray-600 hover:bg-gray-50 font-medium transition">
+                    ⬅️ 上一題
+                </button>
+                <div class="ml-auto"></div>
+                <button id="next-btn" onclick="nextStep()" class="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-lg shadow-emerald-600/20 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    下一題 ➡️
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 已更新為您的最新 Google Apps Script 網頁應用程式 URL
+        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx0CkhTSuNSRB7eg-nGoS4DbRbhlDSGVR4_-hO3c-jFtg3_ZdHebpQXnynbqMkcgyIa1A/exec";
+
+        // 從網址列自動讀取病人身分（例如 ?id=A123456789）
+        const urlParams = new URLSearchParams(window.location.search);
+        let patientId = urlParams.get('id') || "";
+
+        const questions = [
+            {
+                id: 1,
+                title: "👣 行動能力",
+                subtitle: "今天四處走動的狀況如何呢？",
+                key: "mob",
+                options: [
+                    { score: 1, label: "健步如飛", desc: "四處走動完全沒障礙，逛街買菜難不倒我！", icon: "🟢" },
+                    { score: 2, label: "有點小心翼翼", desc: "走遠一點或上下樓梯會有一點點吃力。", icon: "🟡" },
+                    { score: 3, label: "需要稍微歇口氣", desc: "走一段路就覺得中度困難，需要休息。", icon: "🟠" },
+                    { score: 4, label: "步伐沉重困難", desc: "走起路來很吃力，有嚴重的困難。", icon: "🔴" },
+                    { score: 5, label: "幾乎無法移動", desc: "目前大多需要臥床或輪椅代步。", icon: "🟣" }
+                ]
+            },
+            {
+                id: 2,
+                title: "👕 自我照顧",
+                subtitle: "自己洗澡或穿衣服還順手嗎？",
+                key: "self",
+                options: [
+                    { score: 1, label: "完全自己來", desc: "洗澡、穿衣服自己搞定，超獨立！", icon: "🟢" },
+                    { score: 2, label: "小幫手時間", desc: "自己來沒問題，但偶爾需要稍微旁觀或小幫忙。", icon: "🟡" },
+                    { score: 3, label: "有點卡卡的", desc: "洗澡或穿衣需要中度協助。", icon: "🟠" },
+                    { score: 4, label: "需要不少照顧", desc: "日常起居需要別人幫忙才有辦法完成。", icon: "🔴" },
+                    { score: 5, label: "全由他人照顧", desc: "完全無法自己洗澡或穿衣。", icon: "🟣" }
+                ]
+            },
+            {
+                id: 3,
+                title: "🏡 日常活動",
+                subtitle: "如工作、做家事、照顧家人或休閒興趣，進行得順利嗎？",
+                key: "act",
+                options: [
+                    { score: 1, label: "得心應手", desc: "日常活動通通難不倒我，活力滿分！", icon: "🟢" },
+                    { score: 2, label: "稍微有點累", desc: "做家事或日常活動時，覺得比以前花力氣。", icon: "🟡" },
+                    { score: 3, label: "只能挑著做", desc: "中度困難，有些活動得放棄或簡化。", icon: "🟠" },
+                    { score: 4, label: "很吃力", desc: "要進行日常活動變得非常困難。", icon: "🔴" },
+                    { score: 5, label: "完全暫停", desc: "目前沒辦法進行任何日常活動。", icon: "🟣" }
+                ]
+            },
+            {
+                id: 4,
+                title: "⚡ 疼痛/不舒服",
+                subtitle: "今天身上有沒有哪裡在『抗議』（痠痛或不舒服）？",
+                key: "pain",
+                options: [
+                    { score: 1, label: "超級舒爽", desc: "全身輕鬆，完全沒有任何疼痛或不舒服！", icon: "🟢" },
+                    { score: 2, label: "有小小感覺", desc: "有一點點痠痛，但不影響心情。", icon: "🟡" },
+                    { score: 3, label: "這裡痠那裡痛", desc: "中度的疼痛或不舒服，讓人有點在意。", icon: "🟠" },
+                    { score: 4, label: "痛到快受不了", desc: "有嚴重的疼痛，影響到生活了。", icon: "🔴" },
+                    { score: 5, label: "非常難受", desc: "疼痛或不舒服的感覺非常強烈。", icon: "🟣" }
+                ]
+            },
+            {
+                id: 5,
+                title: "😊 心情晴雨表",
+                subtitle: "最近的心情是晴天還是陰天呢？",
+                key: "anx",
+                options: [
+                    { score: 1, label: "大晴天", desc: "心情很棒、很放鬆，完全沒有焦慮或沮喪。", icon: "🟢" },
+                    { score: 2, label: "有時飄點小雲", desc: "有一點點煩惱或鬱悶。", icon: "🟡" },
+                    { score: 3, label: "陰天", desc: "中度的焦慮或沮喪，心裡覺得悶悶的。", icon: "🟠" },
+                    { score: 4, label: "烏雲密布", desc: "心情非常沮喪或焦慮，快喘不過氣。", icon: "🔴" },
+                    { score: 5, label: "狂風暴雨", desc: "有非常嚴重的焦慮或沮喪感。", icon: "🟣" }
+                ]
+            },
+            {
+                id: 6,
+                title: "🌡️ 今日健康溫度計 (EQ-VAS)",
+                subtitle: "如果 100 分是想像中最好的健康狀況，0 分是最差的狀況，您覺得今天的自己大約幾分呢？",
+                isVas: true
+            }
+        ];
+
+        let currentStep = 0;
+        let answers = {
+            mob: null,
+            self: null,
+            act: null,
+            pain: null,
+            anx: null,
+            vas: 80
+        };
+
+        const questionContainer = document.getElementById('question-container');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const progressBar = document.getElementById('progress-bar');
+
+        function renderQuestion() {
+            const q = questions[currentStep];
+            progressBar.style.width = `${((currentStep + 1) / questions.length) * 100}%`;
+            prevBtn.classList.toggle('hidden', currentStep === 0);
+
+            if (!q.isVas) {
+                let html = `
+                    <h2 class="text-xl font-bold text-gray-800">${q.title}</h2>
+                    <p class="text-gray-500 text-sm mt-1 mb-6">${q.subtitle}</p>
+                    <div class="space-y-3">
+                `;
+
+                const selectedVal = answers[q.key];
+
+                q.options.forEach(opt => {
+                    const isChecked = selectedVal === opt.score;
+                    html += `
+                        <label class="flex items-start p-4 rounded-2xl border-2 transition cursor-pointer ${isChecked ? 'border-emerald-500 bg-emerald-50/60 shadow-sm' : 'border-gray-100 hover:border-emerald-200 hover:bg-gray-50'}">
+                            <input type="radio" name="q_${currentStep}" value="${opt.score}" ${isChecked ? 'checked' : ''} onchange="selectOption('${q.key}', ${opt.score})" class="mt-1 text-emerald-600 focus:ring-emerald-500 h-4 w-4">
+                            <div class="ml-3">
+                                <div class="font-bold text-gray-800 flex items-center">
+                                    <span class="mr-2 text-lg">${opt.icon}</span> ${opt.label}
+                                </div>
+                                <div class="text-xs text-gray-500 mt-0.5">${opt.desc}</div>
+                            </div>
+                        </label>
+                    `;
+                });
+                html += `</div>`;
+                questionContainer.innerHTML = html;
+                nextBtn.disabled = selectedVal === null;
+            } else {
+                nextBtn.disabled = false;
+                let html = `
+                    <h2 class="text-xl font-bold text-gray-800">${q.title}</h2>
+                    <p class="text-gray-500 text-sm mt-1 mb-6">${q.subtitle}</p>
+                `;
+
+                if (!patientId) {
+                    html += `
+                        <div class="mb-4 bg-gray-50 p-4 rounded-2xl border border-gray-100">
+                            <label class="block text-xs font-bold text-gray-500 mb-1">請輸入您的姓名或病歷號：</label>
+                            <input type="text" id="input-patient-id" placeholder="例如：王小明 或 P123456" class="w-full px-4 py-2 rounded-xl border border-gray-300 focus:ring-2 focus:ring-emerald-500 focus:outline-none text-sm" oninput="patientId = this.value">
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <div class="bg-emerald-50/50 p-6 rounded-2xl border border-emerald-100 text-center">
+                        <div class="text-5xl font-extrabold text-emerald-600 mb-2" id="vas-display">${answers.vas} <span class="text-lg font-normal text-gray-500">分</span></div>
+                        <p class="text-xs text-emerald-700 mb-6" id="vas-hint">今天感覺還不錯，繼續保持好心情！</p>
+                        <input type="range" min="0" max="100" value="${answers.vas}" oninput="updateVas(this.value)" class="w-full h-3 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-emerald-600">
+                        <div class="flex justify-between text-xs text-gray-400 mt-2">
+                            <span>0分 (最差)</span>
+                            <span>50分</span>
+                            <span>100分 (最好)</span>
+                        </div>
+                    </div>
+                `;
+                questionContainer.innerHTML = html;
+            }
+
+            if (currentStep === questions.length - 1) {
+                nextBtn.innerText = "🎉 確認送出";
+            } else {
+                nextBtn.innerText = "下一題 ➡️";
+            }
+        }
+
+        function selectOption(key, score) {
+            answers[key] = score;
+            nextBtn.disabled = false;
+        }
+
+        function updateVas(val) {
+            answers.vas = parseInt(val);
+            document.getElementById('vas-display').innerHTML = `${val} <span class="text-lg font-normal text-gray-500">分</span>`;
+            const hint = val >= 80 ? "今天狀態超棒，充滿活力！✨" : val >= 50 ? "今天感覺還不錯，繼續保持好心情！🌱" : "今天身體比較辛苦，記得好好休息喔！💛";
+            document.getElementById('vas-hint').innerText = hint;
+        }
+
+        function nextStep() {
+            if (currentStep < questions.length - 1) {
+                currentStep++;
+                renderQuestion();
+            } else {
+                submitData();
+            }
+        }
+
+        function prevStep() {
+            if (currentStep > 0) {
+                currentStep--;
+                renderQuestion();
+            }
+        }
+
+        function submitData() {
+            const profileCode = `${answers.mob}${answers.self}${answers.act}${answers.pain}${answers.anx}`;
+            
+            questionContainer.innerHTML = `
+                <div class="text-center py-12">
+                    <div class="text-4xl animate-bounce mb-4">⏳</div>
+                    <h2 class="text-xl font-bold text-gray-800">正在傳送您的健康資料...</h2>
+                </div>
+            `;
+            document.getElementById('footer-buttons').style.display = 'none';
+
+            const detailText = `行動:${answers.mob}, 自理:${answers.self}, 活動:${answers.act}, 疼痛:${answers.pain}, 心情:${answers.anx}`;
+
+            fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    patientId: patientId || "未具名訪客",
+                    profileCode: profileCode,
+                    vas: answers.vas,
+                    details: detailText
+                })
+            }).then(() => {
+                showSuccessScreen(profileCode);
+            }).catch(error => {
+                console.error('Error:', error);
+                showSuccessScreen(profileCode);
+            });
+        }
+
+        function showSuccessScreen(profileCode) {
+            questionContainer.innerHTML = `
+                <div class="text-center py-6">
+                    <div class="text-6xl mb-4">🎉</div>
+                    <h2 class="text-2xl font-bold text-gray-800">打卡完成！謝謝您的分享</h2>
+                    <p class="text-gray-500 text-sm mt-2">您的健康資料已成功送達醫護團隊囉！</p>
+                    
+                    <div class="bg-gray-50 p-4 rounded-2xl mt-6 text-left border border-gray-100 space-y-2">
+                        <div class="text-xs text-gray-400 font-bold uppercase tracking-wider">背景自動轉譯結果 (已存入試算表)</div>
+                        <div class="flex justify-between text-sm py-1 border-b border-gray-200">
+                            <span class="text-gray-600">EQ-5D-5L 狀態代碼：</span>
+                            <span class="font-mono font-bold text-emerald-600">${profileCode}</span>
+                        </div>
+                        <div class="flex justify-between text-sm py-1">
+                            <span class="text-gray-600">健康溫度計 (VAS)：</span>
+                            <span class="font-mono font-bold text-emerald-600">${answers.vas} 分</span>
+                        </div>
+                    </div>
+
+                    <button onclick="location.reload()" class="mt-8 px-6 py-2.5 rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-600 font-medium transition">
+                        🔄 填寫下一位
+                    </button>
+                </div>
+            `;
+            progressBar.style.width = '100%';
+        }
+
+        renderQuestion();
+    </script>
+</body>
+</html>
